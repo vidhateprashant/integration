@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>org.suitetalk</groupId>
+  <artifactId>suitetalk-axis-proxy-v2022_1</artifactId>
+  <versioning>
+    <release>1.0.0</release>
+    <versions>
+      <version>1.0.0</version>
+    </versions>
+    <lastUpdated>20230321091241</lastUpdated>
+  </versioning>
+</metadata>

@@ -107,7 +107,8 @@
 			<artifactId>suitetalk-axis-proxy-v2022_1</artifactId>
 			<version>1.0.0</version>
 			<scope>system</scope>
-   			<systemPath>${basedir}/src/main/resources/lib/suitetalk-axis-proxy-v2022_1-1.0.0.jar</systemPath>
+			<type>jar</type>
+   			<systemPath>${project.basedir}/libs/suitetalk-axis-proxy-v2022_1-1.0.0.jar</systemPath>
 		</dependency>
 
 		<dependency>

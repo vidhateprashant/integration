@@ -108,7 +108,7 @@
 			<version>1.0.0</version>
 			<scope>system</scope>
 			<type>jar</type>
-   			<systemPath>${project.basedir}/libs/suitetalk-axis-proxy-v2022_1-1.0.0.jar</systemPath>
+			<systemPath>${pom.basedir}/libs/suitetalk-axis-proxy-v2022_1-1.0.0.jar</systemPath>
 		</dependency>
 
 		<dependency>
@@ -116,7 +116,7 @@
 			<artifactId>suitetalk-client-common</artifactId>
 			<version>1.1.0</version>
 			<scope>system</scope>
-			<systemPath>${basedir}/src/main/resources/lib/suitetalk-client-common-1.1.0.jar</systemPath>
+			<systemPath>${pom.basedir}/src/main/resources/lib/suitetalk-client-common-1.1.0.jar</systemPath>
 		</dependency>
 
 		<dependency>
@@ -124,7 +124,7 @@
 			<artifactId>suitetalk-client-v2022_1</artifactId>
 			<version>2.0.0</version>
 			<scope>system</scope>
-			<systemPath>${basedir}/src/main/resources/lib/suitetalk-client-v2022_1-2.0.0.jar</systemPath>
+			<systemPath>${pom.basedir}/src/main/resources/lib/suitetalk-client-v2022_1-2.0.0.jar</systemPath>
 		</dependency>
 
 
@@ -196,6 +196,20 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>install</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/lib</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

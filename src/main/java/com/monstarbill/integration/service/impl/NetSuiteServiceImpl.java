@@ -53,7 +53,6 @@ import com.netsuite.suitetalk.proxy.v2022_1.lists.relationships.VendorAddressboo
 import com.netsuite.suitetalk.proxy.v2022_1.lists.relationships.VendorAddressbookList;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.common.Address;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.common.types.Country;
-import com.netsuite.suitetalk.proxy.v2022_1.platform.core.Record;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.BaseRef;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.CustomFieldList;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.CustomFieldRef;

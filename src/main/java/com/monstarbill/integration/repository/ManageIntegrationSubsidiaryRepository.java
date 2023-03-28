@@ -12,7 +12,6 @@ import com.monstarbill.integration.models.ManageIntegrationSubsidiary;
 @Repository
 public interface ManageIntegrationSubsidiaryRepository extends JpaRepository<ManageIntegrationSubsidiary, String> {
 
-	
 
 	public List<ManageIntegrationSubsidiary> findByIntigrationIdAndIsDeleted(Long id, boolean isDeleted);
 

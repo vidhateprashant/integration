@@ -7,6 +7,7 @@ import java.util.List;
 import com.monstarbill.integration.models.Employee;
 import com.monstarbill.integration.models.Invoice;
 import com.monstarbill.integration.models.Item;
+import com.monstarbill.integration.models.MakePayment;
 import com.monstarbill.integration.models.Supplier;
 import com.monstarbill.integration.payload.request.NetsuiteValueReturn;
 
@@ -25,8 +26,6 @@ public interface NetSuiteService {
 	 * @return employee
 	 */
 	List<Employee> sendEmployees(ArrayList<Long> employeeIds);
-	
-	List<Invoice> sendInvoice(ArrayList<Long> invoiceIds);
 	
 	/**
 	 * @param subsidiaryId

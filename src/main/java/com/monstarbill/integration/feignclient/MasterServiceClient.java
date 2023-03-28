@@ -46,7 +46,7 @@ public interface MasterServiceClient {
 	@Retry(name = "masters-ws")
 	@CircuitBreaker(name = "masters-ws", fallbackMethod = "saveSupplierFallback")
 	public Supplier saveSupplier(@Valid @RequestBody Supplier supplier);
-	
+
 	default Supplier saveSupplierFallback(Supplier supplier, Throwable exception) {
 		logger.error("Getting exception from MS to save the supplier");
 		logger.error("Exception : " + exception.getLocalizedMessage());
@@ -111,10 +111,10 @@ public interface MasterServiceClient {
 
 	@GetMapping("employee/get")
 	@Retry(name = "masters-ws")
-	@CircuitBreaker(name = "masters-ws", fallbackMethod = "findByemployeeIdIdFallback")
-	public Employee findByemployeeIdId(@RequestParam ("id")Long id);
+	@CircuitBreaker(name = "masters-ws", fallbackMethod = "findEmpByIdFallback")
+	public Employee findEmpById(@RequestParam ("id")Long id);
 
-	default Employee findByemployeeIdIdFallback(Long id, Throwable exception) {
+	default Employee findEmpByIdFallback(Long id, Throwable exception) {
 		logger.error("Getting exception from MS to find the Employee");
 		logger.error("Exception : " + exception.getLocalizedMessage());
 		return null;
@@ -146,7 +146,7 @@ public interface MasterServiceClient {
 	@Retry(name = "masters-ws")
 	@CircuitBreaker(name = "masters-ws", fallbackMethod = "findSupplierSubsidiaryBySubsidiaryIdFallback")
 	public List<SupplierSubsidiary> findSupplierSubsidiaryBySubsidiaryId(@RequestParam ("subsidiaryId")Long subsidiaryId);
-	
+
 	default List<SupplierSubsidiary> findSupplierSubsidiaryBySubsidiaryIdFallback(Long subsidiaryId,Throwable exception) {
 		logger.error("Getting exception from MS to find the SupplierSubsidiary");
 		logger.error("Exception : " + exception.getLocalizedMessage());
@@ -157,24 +157,44 @@ public interface MasterServiceClient {
 	@Retry(name = "masters-ws")
 	@CircuitBreaker(name = "masters-ws", fallbackMethod = "findLocationByIdFallback")
 	public Location findLocationById(@RequestParam ("id")Long id);
-	
+
 	default Location findLocationByIdFallback(Long id,Throwable exception) {
 		logger.error("Getting exception from MS to find the Location");
 		logger.error("Exception : " + exception.getLocalizedMessage());
 		return null;
 	}
-	
+
 	@GetMapping("/item/get")
 	@Retry(name = "masters-ws")
 	@CircuitBreaker(name = "masters-ws", fallbackMethod = "findItemByIdFallback")
 	public Item findItemById(@RequestParam ("id")Long id);
-	
+
 	default Item findItemByIdFallback(Long id,Throwable exception) {
 		logger.error("Getting exception from MS to find the Item");
 		logger.error("Exception : " + exception.getLocalizedMessage());
 		return null;
 	}
 
+	@GetMapping("/supplier/get-supplier-by-integrated-id")
+	@Retry(name = "masters-ws")
+	@CircuitBreaker(name = "masters-ws", fallbackMethod = "findSupplierByIntegratedIdAndIsDeletedFallback")
+	public Supplier findSupplierByIntegratedIdAndIsDeleted(@RequestParam("integratedId") String integratedId);
 
+	default Supplier findSupplierByIntegratedIdAndIsDeletedFallback(String integratedId, Throwable exception) {
+		logger.error("Getting exception from MS to find the supplier");
+		logger.error("Exception : " + exception.getLocalizedMessage());
+		return null;
+	}
+
+	@GetMapping("account/get-account-by-integrated-id")
+	@Retry(name = "masters-ws")
+	@CircuitBreaker(name = "masters-ws", fallbackMethod = "getAccountByIntegratedIdFallback")
+	public Account getAccountByIntegratedId(@RequestParam ("integratedId")String integratedId);
+
+	default Account getAccountByIntegratedIdFallback(String integratedId, Throwable exception) {
+		logger.error("Getting exception from MS to find the Account by integratedId ");
+		logger.error("Exception : " + exception.getLocalizedMessage());
+		return null;
+	}
 
 }

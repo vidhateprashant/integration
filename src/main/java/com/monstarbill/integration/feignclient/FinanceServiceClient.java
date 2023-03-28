@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.monstarbill.integration.models.Invoice;
+import com.monstarbill.integration.models.MakePayment;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -50,6 +51,17 @@ public interface FinanceServiceClient {
 
 	default Invoice saveInvoiceFallback(Invoice invoice,Throwable exception) {
 		logger.error("Getting exception from MS to save the Invoice");
+		logger.error("Exception : " + exception.getLocalizedMessage());
+		return null;
+	}
+
+	@PostMapping("/payment/save")
+	@Retry(name = "finance-ws")
+	@CircuitBreaker(name = "finance-ws", fallbackMethod = "saveFallback")
+	public MakePayment save(@RequestBody MakePayment makePayment);
+
+	default MakePayment saveFallback(MakePayment makePayment,Throwable exception) {
+		logger.error("Getting exception from MS to save the MakePayment");
 		logger.error("Exception : " + exception.getLocalizedMessage());
 		return null;
 	}

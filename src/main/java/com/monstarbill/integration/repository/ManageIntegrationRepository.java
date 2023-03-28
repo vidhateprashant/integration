@@ -12,7 +12,5 @@ import com.monstarbill.integration.models.ManageIntegration;
 public interface ManageIntegrationRepository extends JpaRepository<ManageIntegration, String>, JpaSpecificationExecutor {
 
 	public Optional<ManageIntegration> findByIdAndIsDeleted(Long id, boolean isDeleted);
-
-
 	 
 }

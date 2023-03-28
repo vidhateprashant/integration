@@ -1,20 +1,15 @@
 package com.netsuite.webservices.samples;
 
-import com.monstarbill.integration.models.ManageIntegration;
-import com.netsuite.suitetalk.client.common.authentication.Passport;
-import com.netsuite.suitetalk.client.common.authentication.TokenPassport;
+import static com.netsuite.suitetalk.client.common.utils.CommonUtils.composeUrl;
+import static com.netsuite.webservices.samples.Messages.EMPTY_WS_URL;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import org.springframework.util.ResourceUtils;
-
-import static com.netsuite.suitetalk.client.common.utils.CommonUtils.composeUrl;
-
-import static com.netsuite.webservices.samples.Messages.EMPTY_WS_URL;
+import com.monstarbill.integration.models.ManageIntegration;
+import com.netsuite.suitetalk.client.common.authentication.Passport;
+import com.netsuite.suitetalk.client.common.authentication.TokenPassport;
 
 /**
  * <p>This class provides access to all properties in nsclient.properties file.</p>

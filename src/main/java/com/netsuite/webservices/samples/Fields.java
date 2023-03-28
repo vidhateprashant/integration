@@ -1,17 +1,36 @@
 package com.netsuite.webservices.samples;
 
+import static com.netsuite.webservices.samples.Messages.ADDRESS_BOOK_LABEL;
+import static com.netsuite.webservices.samples.Messages.COMPANY_NAME;
+import static com.netsuite.webservices.samples.Messages.CUSTOMER_NAME;
+import static com.netsuite.webservices.samples.Messages.CUSTOM_RECORD_TYPE_ID;
+import static com.netsuite.webservices.samples.Messages.DATE_CREATED;
+import static com.netsuite.webservices.samples.Messages.EMAIL;
+import static com.netsuite.webservices.samples.Messages.ENTITY_ID;
+import static com.netsuite.webservices.samples.Messages.ENTITY_STATUS;
+import static com.netsuite.webservices.samples.Messages.ERROR;
+import static com.netsuite.webservices.samples.Messages.EXTERNAL_ID;
+import static com.netsuite.webservices.samples.Messages.INTERNAL_ID;
+import static com.netsuite.webservices.samples.Messages.IS_INACTIVE;
+import static com.netsuite.webservices.samples.Messages.ITEM_NAME;
+import static com.netsuite.webservices.samples.Messages.NAME;
+import static com.netsuite.webservices.samples.Messages.PHONE;
+import static com.netsuite.webservices.samples.Messages.QUANTITY;
+import static com.netsuite.webservices.samples.Messages.STATUS_INTERNAL_ID;
+import static com.netsuite.webservices.samples.Messages.TOTAL_AMOUNT;
+import static com.netsuite.webservices.samples.Messages.TRANSACTION_ID;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import com.netsuite.suitetalk.proxy.v2022_1.lists.relationships.Customer;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.RecordRef;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.messages.WriteResponse;
 import com.netsuite.suitetalk.proxy.v2022_1.setup.customization.CustomRecord;
 import com.netsuite.suitetalk.proxy.v2022_1.transactions.sales.SalesOrder;
 import com.netsuite.suitetalk.proxy.v2022_1.transactions.sales.SalesOrderItem;
-
-import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import static com.netsuite.webservices.samples.Messages.*;
 
 /**
  * <p>This is type of map which converts particular objects to map of the fields. It can be simply printed

@@ -27,15 +27,5 @@ public class IntegrationWsApplication {
 	Logger.Level fiegnLoggerLevel() {
 		return Logger.Level.FULL;
 	}
-	
-	@Bean
-	public WebMvcConfigurer corsConfigurer() {
-		return new WebMvcConfigurer() {
-			@Override
-			public void addCorsMappings(CorsRegistry registry) {
-				registry.addMapping("/**").allowedOrigins("http://localhost:8082");
-			}
-		};
-	}
 
 }

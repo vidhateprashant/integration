@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,7 +31,7 @@ public class NetSuiteController {
 	 * @param supplierIds
 	 * @return
 	 */
-	@PutMapping("/send-supplier")
+	@GetMapping("/send-supplier")
 	public List<Supplier> sendSupplier(@RequestBody ArrayList<Long> supplierIds,@RequestParam Long subsidiaryId)
 	{
 		return netSuiteService.sendSupplier(supplierIds,subsidiaryId);
@@ -43,7 +42,7 @@ public class NetSuiteController {
 	 * @param itemIds
 	 * @return
 	 */
-	@PutMapping("/send-item")
+	@GetMapping("/send-item")
 	public List<Item> sendItem(@RequestBody ArrayList<Long> itemIds,@RequestParam Long subsidiaryId)
 	{
 		return netSuiteService.sendItems(itemIds,subsidiaryId);
@@ -53,7 +52,7 @@ public class NetSuiteController {
 	 * @param employeeIds
 	 * @return
 	 */
-	@PutMapping("/send-employee")
+	@GetMapping("/send-employee")
 	public List<Employee> sendEmployee(@RequestBody ArrayList<Long> employeeIds,@RequestParam Long subsidiaryId)
 	{
 		return netSuiteService.sendEmployees(employeeIds,subsidiaryId);
@@ -63,7 +62,7 @@ public class NetSuiteController {
 	 * @param invoiceIds
 	 * @return
 	 */
-	@PutMapping("/send-invoice")
+	@GetMapping("/send-invoice")
     public List<Invoice> sendInvoice(@RequestBody ArrayList<Long>invoiceIds,@RequestParam Long subsidiaryId)
     {
         return netSuiteService.sendInvoice(invoiceIds,subsidiaryId);

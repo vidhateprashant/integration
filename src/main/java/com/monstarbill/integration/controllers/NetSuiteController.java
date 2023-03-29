@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.monstarbill.integration.models.Employee;
+import com.monstarbill.integration.models.Invoice;
 import com.monstarbill.integration.models.Item;
 import com.monstarbill.integration.models.Supplier;
 import com.monstarbill.integration.payload.request.NetsuiteValueReturn;
@@ -32,9 +33,9 @@ public class NetSuiteController {
 	 * @return
 	 */
 	@PutMapping("/send-supplier")
-	public List<Supplier> sendSupplier(@RequestBody ArrayList<Long> supplierIds)
+	public List<Supplier> sendSupplier(@RequestBody ArrayList<Long> supplierIds,@RequestParam Long subsidiaryId)
 	{
-		return netSuiteService.sendSupplier(supplierIds);
+		return netSuiteService.sendSupplier(supplierIds,subsidiaryId);
 	}
 
 
@@ -43,9 +44,9 @@ public class NetSuiteController {
 	 * @return
 	 */
 	@PutMapping("/send-item")
-	public List<Item> sendItem(@RequestBody ArrayList<Long> itemIds)
+	public List<Item> sendItem(@RequestBody ArrayList<Long> itemIds,@RequestParam Long subsidiaryId)
 	{
-		return netSuiteService.sendItems(itemIds);
+		return netSuiteService.sendItems(itemIds,subsidiaryId);
 	}
 
 	/** Sending the list of employee to Netsuite
@@ -53,10 +54,20 @@ public class NetSuiteController {
 	 * @return
 	 */
 	@PutMapping("/send-employee")
-	public List<Employee> sendEmployee(@RequestBody ArrayList<Long> employeeIds)
+	public List<Employee> sendEmployee(@RequestBody ArrayList<Long> employeeIds,@RequestParam Long subsidiaryId)
 	{
-		return netSuiteService.sendEmployees(employeeIds);
+		return netSuiteService.sendEmployees(employeeIds,subsidiaryId);
 	}
+	
+	/** Sending the list of invoice to Netsuite
+	 * @param invoiceIds
+	 * @return
+	 */
+	@PutMapping("/send-invoice")
+    public List<Invoice> sendInvoice(@RequestBody ArrayList<Long>invoiceIds,@RequestParam Long subsidiaryId)
+    {
+        return netSuiteService.sendInvoice(invoiceIds,subsidiaryId);
+    }
 	/** Get the list of item or employee or invoice or supplier as a form netsuiteValueReturn object based on type, subsidiaryId, cretedDate between
 	 * @param subsidiaryId
 	 * @param type

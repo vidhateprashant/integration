@@ -29,8 +29,10 @@ import com.monstarbill.integration.commons.CommonUtils;
 import com.monstarbill.integration.commons.CustomException;
 import com.monstarbill.integration.commons.CustomMessageException;
 import com.monstarbill.integration.commons.FilterNames;
+import com.monstarbill.integration.feignclient.SetupServiceClient;
 import com.monstarbill.integration.models.ManageIntegration;
 import com.monstarbill.integration.models.ManageIntegrationSubsidiary;
+import com.monstarbill.integration.models.Subsidiary;
 import com.monstarbill.integration.payload.request.PaginationRequest;
 import com.monstarbill.integration.payload.response.PaginationResponse;
 import com.monstarbill.integration.repository.ManageIntegrationRepository;
@@ -49,6 +51,9 @@ public class ManageIntegrationServiceImpl implements ManageIntegrationService {
 	
 	@Autowired
 	private ManageIntegrationSubsidiaryRepository manageIntegrationSubsidiaryRepository;
+	
+	@Autowired
+	private SetupServiceClient setupServiceClient;
 
 	@Override
 	public List<ManageIntegration> save(List<ManageIntegration> manageIntegrations) {
@@ -119,10 +124,15 @@ public class ManageIntegrationServiceImpl implements ManageIntegrationService {
 			Long manageIntegrationId = manageIntegration.get().getId();
 			log.info("Integration found against given id : " + id);
 		
-			List<ManageIntegrationSubsidiary> manageIntegrationSubsidiary = manageIntegrationSubsidiaryRepository.findByIntigrationId(manageIntegrationId);
-			log.info("Integration subsidiary found against given id : " + manageIntegrationSubsidiary);
-			if (CollectionUtils.isNotEmpty(manageIntegrationSubsidiary)) {
-				manageIntegration.get().setManageIntegrationSubsidiaries(manageIntegrationSubsidiary);
+			List<ManageIntegrationSubsidiary> manageIntegrationSubsidiaries = manageIntegrationSubsidiaryRepository.findByIntigrationId(manageIntegrationId);
+			log.info("Integration subsidiary found against given id : " + manageIntegrationSubsidiaries);
+			if (CollectionUtils.isNotEmpty(manageIntegrationSubsidiaries)) {
+				for (ManageIntegrationSubsidiary manageIntegrationSubsidiary : manageIntegrationSubsidiaries) {
+					Subsidiary subsidairy = this.setupServiceClient.findSubsidiaryById(manageIntegrationSubsidiary.getSubsidiaryId());
+					manageIntegrationSubsidiary.setSubsidiaryName(subsidairy.getName());
+				}
+				manageIntegration.get().setManageIntegrationSubsidiaries(manageIntegrationSubsidiaries);
+				
 			}
 		} else {
 			log.error("Integration Not Found against given Integration id : " + id);

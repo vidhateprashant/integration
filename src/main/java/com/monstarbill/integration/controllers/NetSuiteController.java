@@ -32,7 +32,7 @@ public class NetSuiteController {
 	 * @return
 	 */
 	@GetMapping("/send-supplier")
-	public List<Supplier> sendSupplier(@RequestBody ArrayList<Long> supplierIds,@RequestParam Long subsidiaryId)
+	public List<Supplier> sendSupplier(@RequestParam ArrayList<Long> supplierIds,@RequestParam Long subsidiaryId)
 	{
 		return netSuiteService.sendSupplier(supplierIds,subsidiaryId);
 	}
@@ -43,7 +43,7 @@ public class NetSuiteController {
 	 * @return
 	 */
 	@GetMapping("/send-item")
-	public List<Item> sendItem(@RequestBody ArrayList<Long> itemIds,@RequestParam Long subsidiaryId)
+	public List<Item> sendItem(@RequestParam ArrayList<Long> itemIds,@RequestParam Long subsidiaryId)
 	{
 		return netSuiteService.sendItems(itemIds,subsidiaryId);
 	}
@@ -53,20 +53,20 @@ public class NetSuiteController {
 	 * @return
 	 */
 	@GetMapping("/send-employee")
-	public List<Employee> sendEmployee(@RequestBody ArrayList<Long> employeeIds,@RequestParam Long subsidiaryId)
+	public List<Employee> sendEmployee(@RequestParam ArrayList<Long> employeeIds,@RequestParam Long subsidiaryId)
 	{
 		return netSuiteService.sendEmployees(employeeIds,subsidiaryId);
 	}
-	
+
 	/** Sending the list of invoice to Netsuite
 	 * @param invoiceIds
 	 * @return
 	 */
 	@GetMapping("/send-invoice")
-    public List<Invoice> sendInvoice(@RequestBody ArrayList<Long>invoiceIds,@RequestParam Long subsidiaryId)
-    {
-        return netSuiteService.sendInvoice(invoiceIds,subsidiaryId);
-    }
+	public List<Invoice> sendInvoice(@RequestParam ArrayList<Long>invoiceIds,@RequestParam Long subsidiaryId)
+	{
+		return netSuiteService.sendInvoice(invoiceIds,subsidiaryId);
+	}
 	/** Get the list of item or employee or invoice or supplier as a form netsuiteValueReturn object based on type, subsidiaryId, cretedDate between
 	 * @param subsidiaryId
 	 * @param type

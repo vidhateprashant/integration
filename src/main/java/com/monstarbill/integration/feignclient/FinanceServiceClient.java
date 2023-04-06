@@ -65,4 +65,15 @@ public interface FinanceServiceClient {
 		logger.error("Exception : " + exception.getLocalizedMessage());
 		return null;
 	}
+
+	@GetMapping("/invoice/get-total-amount")
+	@Retry(name = "finance-ws")
+	@CircuitBreaker(name = "finance-ws", fallbackMethod = "getTotalAmountByIdFallback")
+	public Double getTotalAmountById(@RequestParam ("invoiceId")Long invoiceId);
+
+	default Double getTotalAmountByIdFallback(Long invoiceId,Throwable exception) {
+		logger.error("Getting exception from MS to find the totalAmount");
+		logger.error("Exception : " + exception.getLocalizedMessage());
+		return null;
+	}
 }

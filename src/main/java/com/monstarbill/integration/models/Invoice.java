@@ -84,5 +84,8 @@ public class Invoice implements Cloneable {
     
     @Transient
 	private List<InvoiceItem> invoiceItems;
+    
+    @Transient
+	private double totalPaidAmount;
 	
 }

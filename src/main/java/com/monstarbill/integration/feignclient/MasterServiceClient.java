@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.monstarbill.integration.models.Account;
+import com.monstarbill.integration.models.Bank;
 import  com.monstarbill.integration.models.Employee;
 import com.monstarbill.integration.models.Item;
 import com.monstarbill.integration.models.Location;
@@ -186,13 +187,24 @@ public interface MasterServiceClient {
 		return null;
 	}
 
-	@GetMapping("account/get-account-by-integrated-id")
+	@GetMapping("/account/get-account-by-integrated-id")
 	@Retry(name = "masters-ws")
 	@CircuitBreaker(name = "masters-ws", fallbackMethod = "getAccountByIntegratedIdFallback")
 	public Account getAccountByIntegratedId(@RequestParam ("integratedId")String integratedId);
 
 	default Account getAccountByIntegratedIdFallback(String integratedId, Throwable exception) {
 		logger.error("Getting exception from MS to find the Account by integratedId ");
+		logger.error("Exception : " + exception.getLocalizedMessage());
+		return null;
+	}
+
+	@GetMapping("/bank/get-by-gl-bank")
+	@Retry(name = "masters-ws")
+	@CircuitBreaker(name = "masters-ws", fallbackMethod = "findBankByglBankFallback")
+	public Bank findBankByglBank(@RequestParam ("glBank") String glBank);
+
+	default Bank findBankByglBankFallback(String glBank,Throwable exception) {
+		logger.error("Getting exception from MS to find the Bank");
 		logger.error("Exception : " + exception.getLocalizedMessage());
 		return null;
 	}

@@ -6,35 +6,53 @@ import static com.netsuite.webservices.samples.Messages.INVALID_WS_URL;
 import static com.netsuite.webservices.samples.Messages.WRONG_PROPERTIES_FILE;
 import static com.netsuite.webservices.samples.utils.PrintUtils.printError;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.RemoteException;
 import java.sql.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.axis.AxisFault;
 import org.apache.commons.lang.time.DateUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import com.monstarbill.integration.commons.CommonUtils;
 import com.monstarbill.integration.commons.CustomException;
+import com.monstarbill.integration.commons.CustomMessageException;
 import com.monstarbill.integration.enums.FormNames;
 import com.monstarbill.integration.feignclient.FinanceServiceClient;
 import com.monstarbill.integration.feignclient.MasterServiceClient;
 import com.monstarbill.integration.feignclient.SetupServiceClient;
 import com.monstarbill.integration.models.Account;
+import com.monstarbill.integration.models.Bank;
 import com.monstarbill.integration.models.Employee;
-import com.monstarbill.integration.models.EmployeeAccounting;
 import com.monstarbill.integration.models.EmployeeAddress;
 import com.monstarbill.integration.models.EmployeeContact;
 import com.monstarbill.integration.models.Invoice;
 import com.monstarbill.integration.models.InvoiceItem;
+import com.monstarbill.integration.models.InvoicePayment;
 import com.monstarbill.integration.models.Item;
 import com.monstarbill.integration.models.Location;
+import com.monstarbill.integration.models.MakePayment;
+import com.monstarbill.integration.models.MakePaymentList;
 import com.monstarbill.integration.models.ManageIntegration;
 import com.monstarbill.integration.models.ManageIntegrationSubsidiary;
 import com.monstarbill.integration.models.Subsidiary;
@@ -47,13 +65,15 @@ import com.monstarbill.integration.repository.ManageIntegrationRepository;
 import com.monstarbill.integration.repository.ManageIntegrationSubsidiaryRepository;
 import com.monstarbill.integration.service.NetSuiteService;
 import com.netsuite.suitetalk.client.v2022_1.WsClient;
-import com.netsuite.suitetalk.proxy.v2022_1.lists.accounting.NonInventoryResaleItem;
+import com.netsuite.suitetalk.proxy.v2022_1.documents.filecabinet.File;
+import com.netsuite.suitetalk.proxy.v2022_1.lists.accounting.InventoryItem;
 import com.netsuite.suitetalk.proxy.v2022_1.lists.employees.EmployeeAddressbook;
 import com.netsuite.suitetalk.proxy.v2022_1.lists.employees.EmployeeAddressbookList;
 import com.netsuite.suitetalk.proxy.v2022_1.lists.relationships.Vendor;
 import com.netsuite.suitetalk.proxy.v2022_1.lists.relationships.VendorAddressbook;
 import com.netsuite.suitetalk.proxy.v2022_1.lists.relationships.VendorAddressbookList;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.common.Address;
+import com.netsuite.suitetalk.proxy.v2022_1.platform.common.FileSearchBasic;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.BaseRef;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.CustomFieldList;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.CustomFieldRef;
@@ -61,12 +81,16 @@ import com.netsuite.suitetalk.proxy.v2022_1.platform.core.GetSelectValueFieldDes
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.LongCustomFieldRef;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.RecordRef;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.RecordRefList;
+import com.netsuite.suitetalk.proxy.v2022_1.platform.core.SearchMultiSelectField;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.StringCustomFieldRef;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.core.types.RecordType;
+import com.netsuite.suitetalk.proxy.v2022_1.platform.core.types.SearchMultiSelectFieldOperator;
+import com.netsuite.suitetalk.proxy.v2022_1.platform.messages.ReadResponse;
 import com.netsuite.suitetalk.proxy.v2022_1.platform.messages.WriteResponse;
 import com.netsuite.suitetalk.proxy.v2022_1.transactions.purchases.VendorBill;
 import com.netsuite.suitetalk.proxy.v2022_1.transactions.purchases.VendorBillItem;
 import com.netsuite.suitetalk.proxy.v2022_1.transactions.purchases.VendorBillItemList;
+import com.netsuite.suitetalk.proxy.v2022_1.transactions.purchases.VendorPayment;
 import com.netsuite.webservices.samples.Properties;
 import com.netsuite.webservices.samples.WsClientFactory;
 
@@ -84,7 +108,7 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 
 	@Autowired
 	private FinanceServiceClient financeServiceClient;
-	
+
 	@Autowired
 	private ManageIntegrationSubsidiaryRepository manageIntegrationSubsidiaryRepository;
 
@@ -93,37 +117,37 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 	@Autowired
 	private ManageIntegrationRepository integrationRepository;
 
-			public void setClient(Long subsidiaryId) {
-				Long integrationId = null;
-				Optional<ManageIntegrationSubsidiary> optManageIntegrationSubsidiary = manageIntegrationSubsidiaryRepository.findBySubsidiaryId(subsidiaryId);
-				if(optManageIntegrationSubsidiary.isEmpty()) {
-					log.info("ManageIntegration not found against subsidiaryId "+subsidiaryId);	
-					throw new CustomException("ManageIntegration not found against subsidiaryId "+subsidiaryId);
-					}
-				integrationId = optManageIntegrationSubsidiary.get().getIntigrationId();
-			try {
-				Properties properties = new Properties();
-				log.info("Id of netsuite credentials "+integrationId);
-				Optional<ManageIntegration> optIntegration = integrationRepository.findByIdAndIsDeleted(integrationId, false);
-				if (optIntegration.isPresent()) {
-					ManageIntegration integration = optIntegration.get();
-					log.info("Integration credentials found "+integration);
-					properties.setNSProperty(integration);
-					client = WsClientFactory.getWsClient(properties, null);
-					log.info("Client is created");;
-				}
-			} catch (MalformedURLException e) {
-				printError(INVALID_WS_URL, e.getMessage());
-				System.exit(2);
-			} catch (AxisFault e) {
-				printError(ERROR_OCCURRED, e.getFaultString());
-				System.exit(3);
-			} catch (IOException e) {
-				printError(WRONG_PROPERTIES_FILE, e.getMessage());
-				System.exit(1);
+	public void setClient(Long subsidiaryId) {
+		Long integrationId = null;
+		Optional<ManageIntegrationSubsidiary> optManageIntegrationSubsidiary = manageIntegrationSubsidiaryRepository.findBySubsidiaryId(subsidiaryId);
+		if(optManageIntegrationSubsidiary.isEmpty()) {
+			log.info("ManageIntegration not found against subsidiaryId "+subsidiaryId);	
+			throw new CustomException("ManageIntegration not found against subsidiaryId "+subsidiaryId);
+		}
+		integrationId = optManageIntegrationSubsidiary.get().getIntigrationId();
+		try {
+			Properties properties = new Properties();
+			log.info("Id of netsuite credentials "+integrationId);
+			Optional<ManageIntegration> optIntegration = integrationRepository.findByIdAndIsDeleted(integrationId, false);
+			if (optIntegration.isPresent()) {
+				ManageIntegration integration = optIntegration.get();
+				log.info("Integration credentials found "+integration);
+				properties.setNSProperty(integration);
+				client = WsClientFactory.getWsClient(properties, null);
+				log.info("Client is created");;
 			}
+		} catch (MalformedURLException e) {
+			printError(INVALID_WS_URL, e.getMessage());
+			System.exit(2);
+		} catch (AxisFault e) {
+			printError(ERROR_OCCURRED, e.getFaultString());
+			System.exit(3);
+		} catch (IOException e) {
+			printError(WRONG_PROPERTIES_FILE, e.getMessage());
+			System.exit(1);
+		}
 	}
-	
+
 
 	@Override
 	public List<Supplier> sendSupplier(ArrayList<Long> supplierIds,Long subsidiaryId) {
@@ -232,6 +256,7 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 			log.info("Supplier not send because "+supplier.getNsMessage());
 		} else {
 			supplier.setNsStatus("Exported");
+			supplier.setNsMessage((response.getStatus().getStatusDetail()[0].getMessage()));
 			String internalId = ((RecordRef) response.getBaseRef()).getInternalId();
 			supplier.setIntegratedId(internalId);
 			log.info("Supplier send to Netsuite ");
@@ -254,8 +279,13 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 		int size = itemIds.size();
 		for (int position = 0; position < size; position++) {
 			Item savedItems = sendItem(itemIds.get(position));
+			log.info("Item id "+itemIds.get(position));
 			items.add(savedItems);
 		}
+//		for (Long id : itemIds) {
+//			Item savedItems = sendItem(id);
+//			items.add(savedItems);
+//		}
 		return items;
 	}
 
@@ -266,7 +296,8 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 		Item item = masterServiceClient.findById(id);
 		log.info("Find item from Master is completed");
 		if (item != null) {
-			NonInventoryResaleItem nonInventoryResaleItem = new NonInventoryResaleItem();
+			InventoryItem nonInventoryResaleItem = new InventoryItem();
+			//NonInventoryResaleItem nonInventoryResaleItem = new NonInventoryResaleItem();
 			nonInventoryResaleItem.setItemId(item.getName());
 			log.info("Find subsidiary started from Setup by it's id ::" + item.getSubsidiaryId());
 			Subsidiary subsidiary = setupServiceClient.findSubsidiaryById(item.getSubsidiaryId());
@@ -277,7 +308,8 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 				recordRefs[0] = createRecordRef(subsidiary.getIntegratedId());
 				recordRefList.setRecordRef(recordRefs);
 				nonInventoryResaleItem.setSubsidiaryList(recordRefList);
-				log.info("Subsidiary set completed, integratedId "+subsidiary.getIntegratedId());			}
+				log.info("Subsidiary set completed, integratedId "+subsidiary.getIntegratedId());
+			}
 			// For Custom Field Mblid
 			CustomFieldList customFieldList = new CustomFieldList();
 			LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
@@ -417,21 +449,25 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 				List<BaseRef> values = client.getSelectValue(fieldDescription);
 				for (BaseRef baseRef : values) {
 					RecordRef recordRef = (RecordRef) baseRef;
-					if (employee.getSupervisor().equals(recordRef.getName())) {
-						employeen.setSupervisor(recordRef);
-						log.info("Set supervisor completed "+recordRef);
-						break;
+					if(employee.getSupervisor()!=null) {
+						if (employee.getSupervisor().equals(recordRef.getName())) {
+							employeen.setSupervisor(recordRef);
+							log.info("Set supervisor completed "+recordRef);
+							break;
+						}
 					}
 				}
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
 			employeen.setEmail(employee.getEmail());
-			EmployeeAccounting employeeAccount = employee.getEmployeeAccounting();
-			Long DefaultLiabilityAccount = employeeAccount.getDefaultLiabilityAccount();
-			String Account = Long.toString(DefaultLiabilityAccount);
-			employeen.setAccountNumber(Account);
-			log.info("Set account number is completed "+Account);
+			//			EmployeeAccounting employeeAccount = employee.getEmployeeAccounting();
+			//			Long DefaultLiabilityAccount = employeeAccount.getDefaultLiabilityAccount();
+			//			if(DefaultLiabilityAccount!=null) {
+			//				String Account = Long.toString(DefaultLiabilityAccount);
+			//				employeen.setAccountNumber(Account);
+			//				log.info("Set account number is completed "+Account);
+			//			}
 			EmployeeContact employeeContact = employee.getEmployeeContact();
 			employeen.setPhone(employeeContact.getMobile());
 			employeen.setOfficePhone(employeeContact.getOfficeNumber());
@@ -493,7 +529,7 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 		}
 		return savedEmployees;
 	}
-	
+
 	@Transactional
 	@Override
 	public List<Invoice> sendInvoice(ArrayList<Long> invoiceIds,Long subsidiaryId) {
@@ -516,19 +552,19 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 			if (supResponseEntity != null) {
 				vendorBill.setEntity(createRecordRef(supResponseEntity.getIntegratedId()));
 			}
-			 CustomFieldList customFieldList = new CustomFieldList();
-			 LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
-			 customFieldRef.setInternalId("193");
-			 customFieldRef.setValue(invoice.getInvoiceId());
-			 CustomFieldRef[] customFieldRefa = new CustomFieldRef[1];
-			 customFieldRefa[0] = customFieldRef;
-			 customFieldList.setCustomField(customFieldRefa);
-			 vendorBill.setCustomFieldList(customFieldList);
+			CustomFieldList customFieldList = new CustomFieldList();
+			LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
+			customFieldRef.setInternalId("193");
+			customFieldRef.setValue(invoice.getInvoiceId());
+			CustomFieldRef[] customFieldRefa = new CustomFieldRef[1];
+			customFieldRefa[0] = customFieldRef;
+			customFieldList.setCustomField(customFieldRefa);
+			vendorBill.setCustomFieldList(customFieldList);
 			// vendorBill.setTransactionNumber("Test14112022");
 			vendorBill.setTranId(invoice.getInvoiceNo());
 			Subsidiary subResponseEntity = setupServiceClient.findSubsidiaryById(invoice.getSubsidiaryId());
 			log.info("subsidiary fetch " +subResponseEntity );
-			
+
 			if (subResponseEntity != null)
 				vendorBill.setSubsidiary(createRecordRef(subResponseEntity.getIntegratedId()));
 			Location locResponseEntity = masterServiceClient.findLocationById(invoice.getLocationId());
@@ -561,7 +597,7 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 			// vendorBill.setExchangeRate(invoice.getFxRate());
 			// RecordRef approvalStatus = new RecordRef();
 			// approvalStatus.setName(invoice.getInvStatus());
-		//	vendorBill.setApprovalStatus(createRecordRef("2"));
+			//	vendorBill.setApprovalStatus(createRecordRef("2"));
 			VendorBillItemList vendorBillItemList = new VendorBillItemList();
 			List<InvoiceItem> invoiceItems = invoice.getInvoiceItems();
 			VendorBillItem[] vendorBillItems = new VendorBillItem[invoiceItems.size()];
@@ -629,6 +665,163 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 		}
 
 		return savedInvoice;
+	}
+
+	/**
+	 * Import MakePayment XML and DB Insert
+	 * 
+	 * @return Saved MakePayments
+	 */
+	@Override
+	public List<MakePayment> importPaymentXML(Long subsidiaryId) {
+		setClient(subsidiaryId);
+		List<MakePayment> savedMakePayments = new ArrayList<>();
+		FileSearchBasic fileSearchBasic = new FileSearchBasic();
+		SearchMultiSelectField searchMultiSelectField = new SearchMultiSelectField(
+				new RecordRef[] { createRecordRef("860") }, SearchMultiSelectFieldOperator.anyOf);
+		fileSearchBasic.setFolder(searchMultiSelectField);
+		com.netsuite.suitetalk.proxy.v2022_1.platform.core.SearchResult searchResult = null;
+		try {
+			searchResult = client.callSearch(fileSearchBasic);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		com.netsuite.suitetalk.proxy.v2022_1.platform.core.Record[] records = searchResult.getRecordList().getRecord();
+		if (records != null)
+			for (com.netsuite.suitetalk.proxy.v2022_1.platform.core.Record record : records) {
+				log.info(((File) record).getInternalId());
+				String fileId = ((File) record).getInternalId();
+				MakePayment savedMakePayment = saveMakePayment(fileId);
+				savedMakePayments.add(savedMakePayment);
+			}
+		return savedMakePayments;
+	}
+
+	@Transactional
+	MakePayment saveMakePayment(String fileId) {
+		MakePayment savedMakePayment = null;
+		Document document = null;
+		try {
+			ReadResponse response = client.callGetRecord(fileId, RecordType.file);
+			File file = (File) response.getRecord();
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			document = db.parse(new ByteArrayInputStream(file.getContent()));
+		} catch (IOException | ParserConfigurationException | SAXException e) {
+			e.printStackTrace();
+		}
+		document.getDocumentElement().normalize();
+		log.info("Import XML started.");
+		MakePayment makePayment = new MakePayment();
+		NodeList nList = document.getElementsByTagName("SubsidiaryID");
+		Subsidiary subsidiary = setupServiceClient.getSubsidiaryByIntegratedId(nList.item(0).getTextContent(), false);
+		makePayment.setSubsidiaryId(subsidiary.getId());
+		nList = document.getElementsByTagName("Date");
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+		try {
+			makePayment.setPaymentDate(new Date(sdf.parse(nList.item(0).getTextContent()).getTime()));
+		} catch (DOMException | ParseException e) {
+			e.printStackTrace();
+		}
+		nList = document.getElementsByTagName("VendorId");
+		Supplier supplier = masterServiceClient.findSupplierByIntegratedIdAndIsDeleted(nList.item(0).getTextContent());
+		makePayment.setSupplierId(supplier.getId());
+		nList = document.getElementsByTagName("BankAccountId");
+		Account account = masterServiceClient.getAccountByIntegratedId(nList.item(0).getTextContent());
+		log.info("This is account"+account);
+		makePayment.setAccountId(account.getId());
+		String glBank = account.getCode();
+		Bank bank = masterServiceClient.findBankByglBank(glBank);
+		log.info("THis is bank "+bank);
+		makePayment.setBankId(bank.getId());
+		nList = document.getElementsByTagName("TotalAmount");
+		makePayment.setAmount(Double.parseDouble(nList.item(0).getTextContent()));
+		nList = document.getElementsByTagName("Currency");
+		makePayment.setCurrency(nList.item(0).getTextContent());
+		nList = document.getElementsByTagName("BillPmtID");
+		String netsuiteId = nList.item(0).getTextContent();
+		makePayment.setNetsuiteId(netsuiteId);
+		makePayment.setCreatedBy(CommonUtils.getLoggedInUsername());
+		makePayment.setLastModifiedBy(CommonUtils.getLoggedInUsername());
+		String transactionalDate = CommonUtils.convertDateToFormattedString(makePayment.getPaymentDate());
+		String documentSequenceNumber = setupServiceClient.getDocumentSequenceNames(transactionalDate,
+				makePayment.getSubsidiaryId(), FormNames.MAKE_PAYMENT.getFormName(), false);
+		if (StringUtils.isEmpty(documentSequenceNumber)) {
+			throw new CustomMessageException("Please validate your configuration to generate the Payment Number");
+		}
+		makePayment.setPaymentNumber(documentSequenceNumber);
+		makePayment.setType(FormNames.MAKE_PAYMENT.getFormName());
+		String message = "Success";
+		List<CustomFieldRef> customFieldRefs = new ArrayList<>();
+		if (makePayment != null) {
+			nList = document.getElementsByTagName("MblId");
+			NodeList pmtList = document.getElementsByTagName("PmtAmount");
+			List<MakePaymentList> makePaymentLists = new ArrayList<>();
+			List<InvoicePayment> invoicePaymentList = new ArrayList<>();
+			for (int i = 0; i < nList.getLength(); i++) {
+				MakePaymentList makePaymentList = new MakePaymentList();
+				long invoiceId = Long.parseLong(nList.item(i).getTextContent());
+				makePaymentList.setInvoiceId(invoiceId);
+				Invoice invoice = financeServiceClient.getInvoiceById(invoiceId);
+				makePaymentList.setAmountDue(invoice.getAmountDue());
+				Double totalAmountPaid = financeServiceClient.getTotalAmountById(invoiceId);
+				log.info("Total amount "+totalAmountPaid);
+				totalAmountPaid = (totalAmountPaid!=null? totalAmountPaid : 0) + Double.parseDouble(pmtList.item(i).getTextContent());
+				log.info("Total amountPaid "+totalAmountPaid);	
+				invoice.setAmountDue(invoice.getTotalAmount() - totalAmountPaid);
+				makePaymentList.setPaidAmount(Double.parseDouble(pmtList.item(i).getTextContent()));
+				makePaymentList.setPaymentAmount(Double.parseDouble(pmtList.item(i).getTextContent()));
+				makePaymentList.setPaymentNumber(documentSequenceNumber);
+				makePaymentList.setCreatedBy(CommonUtils.getLoggedInUsername());
+				makePaymentList.setLastModifiedBy(CommonUtils.getLoggedInUsername());
+				makePaymentLists.add(makePaymentList);
+				InvoicePayment invoicePayment = new InvoicePayment();
+				invoicePayment.setInvoiceId(invoiceId);
+				invoicePayment.setAmount(Double.parseDouble(pmtList.item(i).getTextContent()));
+				invoicePayment.setType(FormNames.MAKE_PAYMENT.getFormName());
+				invoicePaymentList.add(invoicePayment);
+			}
+			if (makePaymentLists != null) {
+				makePayment.setMakePaymentList(makePaymentLists);
+			}
+			try {
+				savedMakePayment =	financeServiceClient.save(makePayment);
+			} catch (DataAccessException e) {
+				log.error("Error while update the Payment :: " + e.getMostSpecificCause());
+				message = e.getMostSpecificCause().getMessage();
+			}
+			if (savedMakePayment != null) {
+				File copyFile = new File();
+				copyFile.setInternalId(fileId);
+				log.info("Make payment list not null");
+				copyFile.setFolder(createRecordRef("861"));
+				try {
+					client.callUpdateRecord(copyFile);
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
+				LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
+				customFieldRef.setInternalId("4830");
+				customFieldRef.setValue(savedMakePayment.getId());
+				customFieldRefs.add(customFieldRef);
+				log.info("Imported XML: " + savedMakePayment);
+				StringCustomFieldRef customFieldRef1 = new StringCustomFieldRef();
+				customFieldRef1.setInternalId("860");
+				customFieldRef1.setValue(message);
+				customFieldRefs.add(customFieldRef);
+				VendorPayment vendorPayment = new VendorPayment();
+				vendorPayment.setInternalId(netsuiteId);
+				CustomFieldList customFieldList = new CustomFieldList();
+				customFieldList.setCustomField(customFieldRefs.toArray(new CustomFieldRef[customFieldRefs.size()]));
+				vendorPayment.setCustomFieldList(customFieldList);
+				try {
+					client.callUpdateRecord(vendorPayment);
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return savedMakePayment;
 	}
 	@Transactional
 	@Override

@@ -150,6 +150,9 @@ public class MakePayment implements Cloneable {
 
 	@Column(name = "last_modified_by")
 	private String lastModifiedBy;
+	
+	@Column(name = "bank_id")
+	private Long bankId;
 
 	@Transient
 	private String subsidiaryName;

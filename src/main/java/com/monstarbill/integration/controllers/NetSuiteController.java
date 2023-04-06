@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.monstarbill.integration.models.Employee;
 import com.monstarbill.integration.models.Invoice;
 import com.monstarbill.integration.models.Item;
+import com.monstarbill.integration.models.MakePayment;
 import com.monstarbill.integration.models.Supplier;
 import com.monstarbill.integration.payload.request.NetsuiteValueReturn;
 import com.monstarbill.integration.service.NetSuiteService;
@@ -66,6 +67,15 @@ public class NetSuiteController {
 	public List<Invoice> sendInvoice(@RequestParam ArrayList<Long>invoiceIds,@RequestParam Long subsidiaryId)
 	{
 		return netSuiteService.sendInvoice(invoiceIds,subsidiaryId);
+	}
+
+	/** Importing the paymentXML from netsuite and save in mbl
+	 * @return
+	 */
+	@PostMapping("/importPaymentXML")
+	public List<MakePayment> importPaymentXML(Long subsidiaryId)
+	{
+		return netSuiteService.importPaymentXML(subsidiaryId);
 	}
 	/** Get the list of item or employee or invoice or supplier as a form netsuiteValueReturn object based on type, subsidiaryId, cretedDate between
 	 * @param subsidiaryId

@@ -11,6 +11,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -43,8 +44,9 @@ public class Account implements Cloneable{
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@Size(max = 22, message = "Maximum Length of account code is 22")
 	@NotBlank(message = "Account Code is mandatory")
-	@Column(name="code",nullable = false, updatable = false, unique = true)
+	@Column(name="code",nullable = false, updatable = false, unique = true, length = 22)
 	private String code;
 
 	@NotBlank(message = "Account Description  is mandatory")

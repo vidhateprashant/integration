@@ -67,6 +67,7 @@ import com.monstarbill.integration.service.NetSuiteService;
 import com.netsuite.suitetalk.client.v2022_1.WsClient;
 import com.netsuite.suitetalk.proxy.v2022_1.documents.filecabinet.File;
 import com.netsuite.suitetalk.proxy.v2022_1.lists.accounting.InventoryItem;
+import com.netsuite.suitetalk.proxy.v2022_1.lists.accounting.NonInventoryResaleItem;
 import com.netsuite.suitetalk.proxy.v2022_1.lists.employees.EmployeeAddressbook;
 import com.netsuite.suitetalk.proxy.v2022_1.lists.employees.EmployeeAddressbookList;
 import com.netsuite.suitetalk.proxy.v2022_1.lists.relationships.Vendor;
@@ -282,10 +283,10 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 			log.info("Item id "+itemIds.get(position));
 			items.add(savedItems);
 		}
-//		for (Long id : itemIds) {
-//			Item savedItems = sendItem(id);
-//			items.add(savedItems);
-//		}
+		//		for (Long id : itemIds) {
+		//			Item savedItems = sendItem(id);
+		//			items.add(savedItems);
+		//		}
 		return items;
 	}
 
@@ -296,85 +297,122 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 		Item item = masterServiceClient.findById(id);
 		log.info("Find item from Master is completed");
 		if (item != null) {
-			InventoryItem nonInventoryResaleItem = new InventoryItem();
-			//NonInventoryResaleItem nonInventoryResaleItem = new NonInventoryResaleItem();
-			nonInventoryResaleItem.setItemId(item.getName());
-			log.info("Find subsidiary started from Setup by it's id ::" + item.getSubsidiaryId());
-			Subsidiary subsidiary = setupServiceClient.findSubsidiaryById(item.getSubsidiaryId());
-			log.info("Find subsidiary from Setup is completed");
-			if (subsidiary != null) {
-				RecordRefList recordRefList = new RecordRefList();
-				RecordRef[] recordRefs = new RecordRef[1];
-				recordRefs[0] = createRecordRef(subsidiary.getIntegratedId());
-				recordRefList.setRecordRef(recordRefs);
-				nonInventoryResaleItem.setSubsidiaryList(recordRefList);
-				log.info("Subsidiary set completed, integratedId "+subsidiary.getIntegratedId());
-			}
-			// For Custom Field Mblid
-			CustomFieldList customFieldList = new CustomFieldList();
-			LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
-			customFieldRef.setInternalId("3786");
-			customFieldRef.setValue(item.getId());
-			CustomFieldRef[] customFieldRefa = new CustomFieldRef[1];
-			customFieldRefa[0] = customFieldRef;
-			customFieldList.setCustomField(customFieldRefa);
-			nonInventoryResaleItem.setCustomFieldList(customFieldList);
-			nonInventoryResaleItem.setTaxSchedule(createRecordRef("1"));
-			nonInventoryResaleItem.setIsInactive(!item.isActive());
-			nonInventoryResaleItem.setPurchaseDescription(item.getDescription());
 			GetSelectValueFieldDescription fieldDescription = new GetSelectValueFieldDescription();
-			fieldDescription.setRecordType(RecordType.nonInventoryResaleItem);
-			fieldDescription.setField("expenseaccount");
-			log.info("Find account for expense started from Master by it's id ::" + item.getExpenseAccountId());
-			Account acccount = masterServiceClient.getAccount(item.getExpenseAccountId());
-			log.info("Find account for expense from Master completed");
-			if (acccount != null) {
-				nonInventoryResaleItem.setExpenseAccount(createRecordRef(acccount.getIntegratedId()));
+				String category = "Inventory Item";
+				if(item.getCategory().equals(category)){
+				log.info("In inventory item");
+				InventoryItem inventoryItem = new InventoryItem();
+				fieldDescription.setRecordType(RecordType.inventoryItem);
+				fieldDescription.setField("assetaccount");
+				log.info("Find account for asset started from Master by it's id ::" + item.getAssetAccountId());
+				Account acccount = masterServiceClient.getAccount(item.getAssetAccountId());
+				log.info("Find account for asset from Master completed");
+				if (acccount != null) {
+					inventoryItem.setAssetAccount(createRecordRef(acccount.getIntegratedId()));
+				}
+				inventoryItem.setItemId(item.getName());
+				log.info("Find subsidiary started from Setup by it's id ::" + item.getSubsidiaryId());
+				Subsidiary subsidiary = setupServiceClient.findSubsidiaryById(item.getSubsidiaryId());
+				log.info("Find subsidiary from Setup is completed");
+				if (subsidiary != null) {
+					RecordRefList recordRefList = new RecordRefList();
+					RecordRef[] recordRefs = new RecordRef[1];
+					recordRefs[0] = createRecordRef(subsidiary.getIntegratedId());
+					recordRefList.setRecordRef(recordRefs);
+					inventoryItem.setSubsidiaryList(recordRefList);
+					log.info("Subsidiary set completed, integratedId "+subsidiary.getIntegratedId());
+				}
+				// For Custom Field Mblid
+				CustomFieldList customFieldList = new CustomFieldList();
+				LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
+				customFieldRef.setInternalId("4827");
+				customFieldRef.setValue(item.getId());
+				CustomFieldRef[] customFieldRefa = new CustomFieldRef[1];
+				customFieldRefa[0] = customFieldRef;
+				customFieldList.setCustomField(customFieldRefa);
+				inventoryItem.setCustomFieldList(customFieldList);
+				inventoryItem.setTaxSchedule(createRecordRef("1"));
+				inventoryItem.setIsInactive(!item.isActive());
+				inventoryItem.setPurchaseDescription(item.getDescription());
+				WriteResponse response = null;
+				try {
+					log.info("Send item to netsuite "+inventoryItem.toString());
+					response = client.callAddRecord(inventoryItem);
+					log.info("Getting response from netsuite"+response.toString());	
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
+				// For message set
+				if (!response.getStatus().isIsSuccess()) {
+					item.setNsMessage((response.getStatus().getStatusDetail()[0].getMessage()));
+					log.info("UnSuccessfull because "+item.getNsMessage());
+					item.setNsStatus("Disputed");
+					log.info(response.toString());
+				} else {
+					item.setNsStatus("Exported");
+					log.info("Successfull");
+					item.setNsMessage("Item send to netsuite successfully");
+					String internalId = ((RecordRef) response.getBaseRef()).getInternalId();
+					item.setIntegratedId(internalId);
+				}
 			}
-			//			fieldDescription.setField("incomeaccount");
-			//			// Checking not null
-			//			if(item.getIncomeAccount()!= null) {
-			//				Long incomeId = Long.parseLong(item.getIncomeAccount());
-			//				log.info("Find account for Income started from Master by it's id :: " + incomeId);
-			//				Account incomeAccount = masterServiceClient.getAccount(incomeId);
-			//				log.info("Find account for Income from Master completed");
-			//				if (incomeAccount != null) {
-			//					nonInventoryResaleItem.setIncomeAccount((createRecordRef(incomeAccount.getIntegratedId())));
-			//				}
-			//			}
-			//			fieldDescription.setField("unitstype");
-			//			try {
-			//				List<BaseRef> values = client.getSelectValue(fieldDescription);
-			//				for (BaseRef baseRef : values) {
-			//					RecordRef recordRef = (RecordRef) baseRef;
-			//					if (item.getUom().equals(recordRef.getName())) {
-			//						nonInventoryResaleItem.setUnitsType(recordRef);
-			//						break;
-			//					}
-			//				}
-			//			} catch (RemoteException e) {
-			//				e.printStackTrace();
-			//			}
-			WriteResponse response = null;
-			try {
-				log.info("Send item to netsuite "+nonInventoryResaleItem.toString());
-				response = client.callAddRecord(nonInventoryResaleItem);
-				log.info("Getting response from netsuite"+response.toString());	
-			} catch (RemoteException e) {
-				e.printStackTrace();
-			}
-			// For message set
-			if (!response.getStatus().isIsSuccess()) {
-				item.setNsMessage((response.getStatus().getStatusDetail()[0].getMessage()));
-				log.info("UnSuccessfull because "+item.getNsMessage());
-				item.setNsStatus("Disputed");
-				log.info(response.toString());
-			} else {
-				item.setNsStatus("Exported");
-				log.info("Successfull");
-				item.setNsMessage("Item send to netsuite successfully");
-				String internalId = ((RecordRef) response.getBaseRef()).getInternalId();
-				item.setIntegratedId(internalId);
+				String category2 = "Service Item";
+				if(item.getCategory().equals(category2)) {
+				log.info("In non inventory item");
+				NonInventoryResaleItem nonInventoryResaleItem = new NonInventoryResaleItem();
+				fieldDescription.setRecordType(RecordType.nonInventoryResaleItem);
+				fieldDescription.setField("expenseaccount");
+				log.info("Find account for expense started from Master by it's id ::" + item.getExpenseAccountId());
+				Account acccount = masterServiceClient.getAccount(item.getExpenseAccountId());
+				log.info("Find account for expense from Master completed");
+				if (acccount != null) {
+					nonInventoryResaleItem.setExpenseAccount(createRecordRef(acccount.getIntegratedId()));
+				}
+				nonInventoryResaleItem.setItemId(item.getName());
+				log.info("Find subsidiary started from Setup by it's id ::" + item.getSubsidiaryId());
+				Subsidiary subsidiary = setupServiceClient.findSubsidiaryById(item.getSubsidiaryId());
+				log.info("Find subsidiary from Setup is completed");
+				if (subsidiary != null) {
+					RecordRefList recordRefList = new RecordRefList();
+					RecordRef[] recordRefs = new RecordRef[1];
+					recordRefs[0] = createRecordRef(subsidiary.getIntegratedId());
+					recordRefList.setRecordRef(recordRefs);
+					nonInventoryResaleItem.setSubsidiaryList(recordRefList);
+					log.info("Subsidiary set completed, integratedId "+subsidiary.getIntegratedId());
+				}
+				// For Custom Field Mblid
+				CustomFieldList customFieldList = new CustomFieldList();
+				LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
+				customFieldRef.setInternalId("4827");
+				customFieldRef.setValue(item.getId());
+				CustomFieldRef[] customFieldRefa = new CustomFieldRef[1];
+				customFieldRefa[0] = customFieldRef;
+				customFieldList.setCustomField(customFieldRefa);
+				nonInventoryResaleItem.setCustomFieldList(customFieldList);
+				nonInventoryResaleItem.setTaxSchedule(createRecordRef("1"));
+				nonInventoryResaleItem.setIsInactive(!item.isActive());
+				nonInventoryResaleItem.setPurchaseDescription(item.getDescription());
+				WriteResponse response = null;
+				try {
+					log.info("Send item to netsuite "+nonInventoryResaleItem.toString());
+					response = client.callAddRecord(nonInventoryResaleItem);
+					log.info("Getting response from netsuite"+response.toString());	
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
+				// For message set
+				if (!response.getStatus().isIsSuccess()) {
+					item.setNsMessage((response.getStatus().getStatusDetail()[0].getMessage()));
+					log.info("UnSuccessfull because "+item.getNsMessage());
+					item.setNsStatus("Disputed");
+					log.info(response.toString());
+				} else {
+					item.setNsStatus("Exported");
+					log.info("Successfull");
+					item.setNsMessage("Item send to netsuite successfully");
+					String internalId = ((RecordRef) response.getBaseRef()).getInternalId();
+					item.setIntegratedId(internalId);
+				}
 			}
 
 			try {
@@ -419,7 +457,7 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 			}
 			CustomFieldList customFieldList = new CustomFieldList();
 			StringCustomFieldRef customFieldRef = new StringCustomFieldRef();
-			customFieldRef.setInternalId("3789");
+			customFieldRef.setInternalId("4826");
 			customFieldRef.setValue(employee.getEmployeeNumber());
 			CustomFieldRef[] customFieldRefa = new CustomFieldRef[1];
 			customFieldRefa[0] = customFieldRef;

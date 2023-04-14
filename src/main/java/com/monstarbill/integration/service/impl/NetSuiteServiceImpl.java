@@ -175,6 +175,14 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 		vendor.setEntityId(supplier.getVendorNumber());
 		vendor.setLegalName(supplier.getLegalName());
 		log.info("Set CompanyName, EntityId and LegalName finished "+supplier.getName()+" , "+supplier.getVendorNumber()+" and "+supplier.getLegalName());
+		CustomFieldList customFieldList = new CustomFieldList();
+		LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
+		customFieldRef.setInternalId("4826");
+		customFieldRef.setValue(supplier.getId());
+		CustomFieldRef[] customFieldRefa = new CustomFieldRef[1];
+		customFieldRefa[0] = customFieldRef;
+		customFieldList.setCustomField(customFieldRefa);
+		vendor.setCustomFieldList(customFieldList);
 		GetSelectValueFieldDescription fieldDescription = new GetSelectValueFieldDescription();
 		fieldDescription.setRecordType(RecordType.vendor);
 		fieldDescription.setField("category");
@@ -192,7 +200,6 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
-
 		fieldDescription.setField("terms");
 		try {
 			List<BaseRef> values = client.getSelectValue(fieldDescription);
@@ -298,8 +305,8 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 		log.info("Find item from Master is completed");
 		if (item != null) {
 			GetSelectValueFieldDescription fieldDescription = new GetSelectValueFieldDescription();
-				String category = "Inventory Item";
-				if(item.getCategory().equals(category)){
+			String category = "Inventory Item";
+			if(item.getCategory().equals(category)){
 				log.info("In inventory item");
 				InventoryItem inventoryItem = new InventoryItem();
 				fieldDescription.setRecordType(RecordType.inventoryItem);
@@ -356,8 +363,8 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 					item.setIntegratedId(internalId);
 				}
 			}
-				String category2 = "Service Item";
-				if(item.getCategory().equals(category2)) {
+			String category2 = "Service Item";
+			if(item.getCategory().equals(category2)) {
 				log.info("In non inventory item");
 				NonInventoryResaleItem nonInventoryResaleItem = new NonInventoryResaleItem();
 				fieldDescription.setRecordType(RecordType.nonInventoryResaleItem);
@@ -456,9 +463,10 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 				log.info("Set subsidiary completed which integratedId is"+subsidiary.getIntegratedId());
 			}
 			CustomFieldList customFieldList = new CustomFieldList();
-			StringCustomFieldRef customFieldRef = new StringCustomFieldRef();
+			LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
 			customFieldRef.setInternalId("4826");
-			customFieldRef.setValue(employee.getEmployeeNumber());
+			//customFieldRef.setValue(employee.getEmployeeNumber());
+			customFieldRef.setValue(employee.getId());
 			CustomFieldRef[] customFieldRefa = new CustomFieldRef[1];
 			customFieldRefa[0] = customFieldRef;
 			customFieldList.setCustomField(customFieldRefa);
@@ -551,6 +559,7 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 				log.info("Employee not send to netsuite "+employee.getNsMessage());
 			} else {
 				employee.setNsStatus("Exported");
+				employee.setNsMessage("Employee send to netsuite successfully");
 				String internalId = ((RecordRef) response.getBaseRef()).getInternalId();
 				employee.setIntegratedId(internalId);
 				log.info("Employee send to netsuite successfully");

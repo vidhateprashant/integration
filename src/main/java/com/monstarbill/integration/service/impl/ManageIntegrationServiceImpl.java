@@ -29,6 +29,7 @@ import com.monstarbill.integration.commons.CommonUtils;
 import com.monstarbill.integration.commons.CustomException;
 import com.monstarbill.integration.commons.CustomMessageException;
 import com.monstarbill.integration.commons.FilterNames;
+import com.monstarbill.integration.commons.SecurityContextImpl;
 import com.monstarbill.integration.feignclient.SetupServiceClient;
 import com.monstarbill.integration.models.ManageIntegration;
 import com.monstarbill.integration.models.ManageIntegrationSubsidiary;
@@ -54,15 +55,18 @@ public class ManageIntegrationServiceImpl implements ManageIntegrationService {
 	
 	@Autowired
 	private SetupServiceClient setupServiceClient;
+	
+	@Autowired
+	private SecurityContextImpl securityContextImpl;
 
 	@Override
 	public List<ManageIntegration> save(List<ManageIntegration> manageIntegrations) {
 		for (ManageIntegration manageIntegration : manageIntegrations) {
-			String username = CommonUtils.getLoggedInUsername();
+			String username = securityContextImpl.getCurrentUserName();
 			if (manageIntegration.getId() == null) {
-				manageIntegration.setCreatedBy(CommonUtils.getLoggedInUsername());
+				manageIntegration.setCreatedBy(securityContextImpl.getCurrentUserName());
 			}
-			manageIntegration.setLastModifiedBy(CommonUtils.getLoggedInUsername());
+			manageIntegration.setLastModifiedBy(securityContextImpl.getCurrentUserName());
 			ManageIntegration savedManageIntegration;
 			try {
 				savedManageIntegration = this.manageIntegrationRepository.save(manageIntegration);

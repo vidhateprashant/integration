@@ -37,6 +37,7 @@ import org.xml.sax.SAXException;
 import com.monstarbill.integration.commons.CommonUtils;
 import com.monstarbill.integration.commons.CustomException;
 import com.monstarbill.integration.commons.CustomMessageException;
+import com.monstarbill.integration.commons.SecurityContextImpl;
 import com.monstarbill.integration.enums.FormNames;
 import com.monstarbill.integration.feignclient.FinanceServiceClient;
 import com.monstarbill.integration.feignclient.MasterServiceClient;
@@ -57,6 +58,7 @@ import com.monstarbill.integration.models.ManageIntegration;
 import com.monstarbill.integration.models.ManageIntegrationSubsidiary;
 import com.monstarbill.integration.models.Subsidiary;
 import com.monstarbill.integration.models.Supplier;
+import com.monstarbill.integration.models.SupplierAccounting;
 import com.monstarbill.integration.models.SupplierAddress;
 import com.monstarbill.integration.models.SupplierSubsidiary;
 import com.monstarbill.integration.models.TaxGroup;
@@ -117,6 +119,9 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 
 	@Autowired
 	private ManageIntegrationRepository integrationRepository;
+	
+	@Autowired
+	private SecurityContextImpl securityContextImpl;
 
 	public void setClient(Long subsidiaryId) {
 		Long integrationId = null;
@@ -213,6 +218,14 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 			}
 		} catch (RemoteException e) {
 			e.printStackTrace();
+		}
+		SupplierAccounting supplierAccounting = supplier.getSupplierAccounting();
+		fieldDescription.setField("accountnumber");
+		log.info("Find account for liability started from Master by it's id ::" + supplierAccounting.getLiabilityAccountId());
+		Account acccount = masterServiceClient.getAccount(supplierAccounting.getLiabilityAccountId());
+		log.info("Find account for liability from Master completed");
+		if (acccount != null) {
+			vendor.setPayablesAccount(createRecordRef(acccount.getIntegratedId()));
 		}
 		vendor.setIsInactive(!supplier.isActive());
 		List<SupplierSubsidiary> supplierSubsidiaries = supplier.getSupplierSubsidiary();
@@ -788,8 +801,8 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 		nList = document.getElementsByTagName("BillPmtID");
 		String netsuiteId = nList.item(0).getTextContent();
 		makePayment.setNetsuiteId(netsuiteId);
-		makePayment.setCreatedBy(CommonUtils.getLoggedInUsername());
-		makePayment.setLastModifiedBy(CommonUtils.getLoggedInUsername());
+		makePayment.setCreatedBy(securityContextImpl.getCurrentUserName());
+		makePayment.setLastModifiedBy(securityContextImpl.getCurrentUserName());
 		String transactionalDate = CommonUtils.convertDateToFormattedString(makePayment.getPaymentDate());
 		String documentSequenceNumber = setupServiceClient.getDocumentSequenceNames(transactionalDate,
 				makePayment.getSubsidiaryId(), FormNames.MAKE_PAYMENT.getFormName(), false);
@@ -819,8 +832,8 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 				makePaymentList.setPaidAmount(Double.parseDouble(pmtList.item(i).getTextContent()));
 				makePaymentList.setPaymentAmount(Double.parseDouble(pmtList.item(i).getTextContent()));
 				makePaymentList.setPaymentNumber(documentSequenceNumber);
-				makePaymentList.setCreatedBy(CommonUtils.getLoggedInUsername());
-				makePaymentList.setLastModifiedBy(CommonUtils.getLoggedInUsername());
+				makePaymentList.setCreatedBy(securityContextImpl.getCurrentUserName());
+				makePaymentList.setLastModifiedBy(securityContextImpl.getCurrentUserName());
 				makePaymentLists.add(makePaymentList);
 				InvoicePayment invoicePayment = new InvoicePayment();
 				invoicePayment.setInvoiceId(invoiceId);

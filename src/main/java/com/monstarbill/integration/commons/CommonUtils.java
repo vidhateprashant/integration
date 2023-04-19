@@ -31,15 +31,6 @@ import com.monstarbill.integration.payload.response.PaginationResponse;
  *
  */
 public class CommonUtils {
-	
-	/**
-	 * get username of logged in user from the context
-	 * 
-	 * @return
-	 */
-	public static String getLoggedInUsername() {
-		return "";
-	}
 
 	/**
 	 * Prashant : 30-Jun-2022

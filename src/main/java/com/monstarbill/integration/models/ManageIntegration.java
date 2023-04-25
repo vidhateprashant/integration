@@ -54,7 +54,7 @@ public class ManageIntegration implements Cloneable{
 	
 	private boolean isSupplierMaster;
 		
-	private boolean isTaxCode;
+	private boolean isEmployeeCode;
 		
 	private boolean isApInvoice;
 	

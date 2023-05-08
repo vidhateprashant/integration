@@ -119,7 +119,7 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 
 	@Autowired
 	private ManageIntegrationRepository integrationRepository;
-	
+
 	@Autowired
 	private SecurityContextImpl securityContextImpl;
 
@@ -237,7 +237,7 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 			vendor.setSubsidiary(createRecordRef(subsidiary.getIntegratedId()));
 		}
 		// vendor.setEmail("tanmoy28@gmail.com");
-		vendor.setCustomForm(createRecordRef("159")); // 53
+		//vendor.setCustomForm(createRecordRef("159")); // 53
 
 		VendorAddressbookList addressbookList = new VendorAddressbookList();
 		List<SupplierAddress> supplierAddresses = supplier.getSupplierAddresses();
@@ -381,12 +381,23 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 				log.info("In non inventory item");
 				NonInventoryResaleItem nonInventoryResaleItem = new NonInventoryResaleItem();
 				fieldDescription.setRecordType(RecordType.nonInventoryResaleItem);
+				//	nonInventoryResaleItem.setCustomForm(createRecordRef("313"));
 				fieldDescription.setField("expenseaccount");
 				log.info("Find account for expense started from Master by it's id ::" + item.getExpenseAccountId());
 				Account acccount = masterServiceClient.getAccount(item.getExpenseAccountId());
 				log.info("Find account for expense from Master completed");
 				if (acccount != null) {
 					nonInventoryResaleItem.setExpenseAccount(createRecordRef(acccount.getIntegratedId()));
+				}
+				if(item.getIncomeAccount()!=null) {
+					fieldDescription.setField("incomeaccount");
+					log.info("Find account for income started from Master by it's id ::" + item.getIncomeAccount());
+					Long incomeAccount = Long.parseLong(item.getIncomeAccount());
+					Account acccountForIncome = masterServiceClient.getAccount(incomeAccount);
+					log.info("Find account for income from Master completed");
+					if (acccountForIncome != null) {
+						nonInventoryResaleItem.setIncomeAccount(createRecordRef(acccountForIncome.getIntegratedId()));
+					}
 				}
 				nonInventoryResaleItem.setItemId(item.getName());
 				log.info("Find subsidiary started from Setup by it's id ::" + item.getSubsidiaryId());
@@ -614,8 +625,9 @@ public class NetSuiteServiceImpl implements NetSuiteService {
 			}
 			CustomFieldList customFieldList = new CustomFieldList();
 			LongCustomFieldRef customFieldRef = new LongCustomFieldRef();
-			customFieldRef.setInternalId("193");
+			customFieldRef.setInternalId("4822");
 			customFieldRef.setValue(invoice.getInvoiceId());
+			log.info("THis is invoiceId "+invoice.getInvoiceId());	
 			CustomFieldRef[] customFieldRefa = new CustomFieldRef[1];
 			customFieldRefa[0] = customFieldRef;
 			customFieldList.setCustomField(customFieldRefa);

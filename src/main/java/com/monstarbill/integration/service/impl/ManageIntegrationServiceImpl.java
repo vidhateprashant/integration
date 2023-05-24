@@ -176,10 +176,10 @@ public class ManageIntegrationServiceImpl implements ManageIntegrationService {
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 				try {
 					if (startDate!= null && !startDate.isEmpty()) {
-						predicates.add(criteriaBuilder.lessThanOrEqualTo(root.<Date>get("startDate"), sdf.parse(startDate)));
+						predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.<Date>get("startDate"), sdf.parse(startDate)));
 					}
 					if (endDate!= null && !endDate.isEmpty()) {
-						predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.<Date>get("endDate"), sdf.parse(endDate)));
+						predicates.add(criteriaBuilder.lessThanOrEqualTo(root.<Date>get("endDate"), sdf.parse(endDate)));
 					}
 				} catch (ParseException e) {
 					e.printStackTrace();

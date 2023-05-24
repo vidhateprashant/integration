@@ -53,7 +53,8 @@ public class ManageIntegration implements Cloneable{
 	private boolean isCompanyMaster;
 	
 	private boolean isSupplierMaster;
-		
+	
+	@Column(columnDefinition = "boolean default true")
 	private boolean isEmployeeCode;
 		
 	private boolean isApInvoice;

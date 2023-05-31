@@ -2,7 +2,6 @@ package com.monstarbill.integration.models;
 
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -11,7 +10,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Lob;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
@@ -35,15 +33,19 @@ import lombok.ToString;
 @ToString
 @Audited
 @AuditTable("subsidiary_aud")
-public class Subsidiary implements Cloneable {
+public class Subsidiary {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
 	@NotBlank(message = "Name is mandatory")
-	@Column(nullable = false, updatable = false, unique = true)
+	@Column(nullable = false, updatable = false)
 	private String name;
+	
+	@NotBlank(message = "Account ID is mandatory")
+	@Column(name = "account_id")
+	private String accountId;
 
 	@Column(name="legal_name")
 	private String legalName;
@@ -63,11 +65,11 @@ public class Subsidiary implements Cloneable {
 	@Column(updatable = false)
 	private String language;
 
-	@NotBlank(message = "Currency is mandatory")
+//	@NotBlank(message = "Currency is mandatory")
 	@Column(updatable = false)
 	private String currency;
 
-	@NotBlank(message = "Fiscal Calender is mandatory")
+//	@NotBlank(message = "Fiscal Calender is mandatory")
 	@Column(name="fiscal_calender")
 	private String fiscalCalender;
 
@@ -94,11 +96,17 @@ public class Subsidiary implements Cloneable {
 	@Column(name="is_active", columnDefinition = "boolean default true")
 	private boolean isActive;
 	
-	@Column(name="active_date")
+//	@NotNull(message = "Active Date is mandatory")
+	@Column(name="active_date",nullable = false )
 	private Date activeDate;
 	
 	@Column(name="is_deleted", columnDefinition = "boolean default false")
 	private boolean isDeleted;
+	
+	@Column(name="is_parent", columnDefinition = "boolean default true")
+	private boolean isParent;
+
+	private String integratedId;
 	
 	@Column(name = "logo_metadata")
 	private String logoMetadata;
@@ -120,22 +128,5 @@ public class Subsidiary implements Cloneable {
 	@Column(name="last_modified_by")
 	private String lastModifiedBy;
 	
-	private String integratedId;
-	
-	@Transient
-	private List<SubsidiaryAddress> subsidiaryAddresses;
-	
-	public Subsidiary(Long id, String name, String parentCompany, String currency, Date createdDate) {
-		this.id = id;
-		this.name = name;
-		this.parentCompany = parentCompany;
-		this.currency = currency;
-		this.createdDate = createdDate;
-	}
-	
-	@Override
-	public Object clone() throws CloneNotSupportedException {
-		return super.clone();
-	}
-
-}
+	@Column(name="inactive_date")
+	private Date inactiveDate;}
